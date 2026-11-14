@@ -1,5 +1,6 @@
 import UIKit
 import Foundation
+import UniformTypeIdentifiers
 import zlib
 
 @UIApplicationMain
@@ -38,7 +39,7 @@ final class FileBrowserController: UIViewController, UITableViewDataSource, UITa
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "MT 管理器"
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .white
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         leftURL = docs; rightURL = docs
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "导入", style: .plain, target: self, action: #selector(importFiles))
@@ -60,7 +61,7 @@ final class FileBrowserController: UIViewController, UITableViewDataSource, UITa
         let heading = UILabel()
         heading.text = tag == 0 ? "窗口 1" : "窗口 2"
         heading.font = .systemFont(ofSize: 12, weight: .semibold)
-        heading.textColor = .secondaryLabel
+        heading.textColor = .darkGray
         heading.tag = 20 + tag
         heading.translatesAutoresizingMaskIntoConstraints = false
         table.tag = tag; table.dataSource = self; table.delegate = self
@@ -125,7 +126,7 @@ final class FileBrowserController: UIViewController, UITableViewDataSource, UITa
         c.textLabel?.font = .systemFont(ofSize: 12)
         let icon = item.directory ? "folder.fill" : (item.url.pathExtension.lowercased() == "ipa" ? "app.gift.fill" : "doc")
         c.imageView?.image = UIImage(systemName: icon)
-        c.imageView?.tintColor = item.directory ? .systemBlue : .secondaryLabel
+        c.imageView?.tintColor = item.directory ? .blue : .darkGray
         return c
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -155,7 +156,7 @@ final class FileBrowserController: UIViewController, UITableViewDataSource, UITa
 final class IPADetailController: UITableViewController {
     private let url: URL
     private var values: [(String,String)] = []
-    init(url: URL) { self.url = url; super.init(style: .insetGrouped); title = url.lastPathComponent }
+    init(url: URL) { self.url = url; super.init(style: .grouped); title = url.lastPathComponent }
     required init?(coder: NSCoder) { fatalError() }
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -170,8 +171,8 @@ final class IPADetailController: UITableViewController {
     override func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { values.count }
     override func tableView(_ t: UITableView, cellForRowAt i: IndexPath) -> UITableViewCell {
         let c = t.dequeueReusableCell(withIdentifier: "v", for: i)
-        var v = c.defaultContentConfiguration(); v.text = values[i.row].0; v.secondaryText = values[i.row].1; v.secondaryTextProperties.numberOfLines = 0
-        c.contentConfiguration = v; return c
+        c.textLabel?.text = values[i.row].0; c.textLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+        c.detailTextLabel?.text = values[i.row].1; c.detailTextLabel?.numberOfLines = 0; return c
     }
 }
 
@@ -221,7 +222,7 @@ final class TextController: UIViewController {
     init(url: URL) { self.url=url; super.init(nibName:nil,bundle:nil); title=url.lastPathComponent }
     required init?(coder: NSCoder) { fatalError() }
     override func viewDidLoad() {
-        super.viewDidLoad(); view.backgroundColor = .systemBackground
+        super.viewDidLoad(); view.backgroundColor = .white
         let text=UITextView(); text.font = .monospacedSystemFont(ofSize:13,weight:.regular); text.isEditable=false
         text.text=(try? String(contentsOf:url,encoding:.utf8)) ?? "无法按 UTF-8 文本读取"
         text.translatesAutoresizingMaskIntoConstraints=false; view.addSubview(text)
