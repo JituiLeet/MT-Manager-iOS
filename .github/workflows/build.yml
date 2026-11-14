@@ -1,0 +1,47 @@
+name: Build MT Manager iOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build TrollStore target
+        run: |
+          xcodebuild -project MTManager-iOS.xcodeproj -scheme MTManagerTrollStore -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CONFIGURATION_BUILD_DIR="$PWD/build/trollstore" build
+      - name: Package TrollStore IPA
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -R build/trollstore/MTManagerTrollStore.app build/ipa/Payload/
+          cd build/ipa
+          zip -qry ../../MTManager-TrollStore.ipa Payload
+      - name: Build Jailbreak target
+        run: |
+          xcodebuild -project MTManager-iOS.xcodeproj -scheme MTManagerJailbreak -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CONFIGURATION_BUILD_DIR="$PWD/build/jailbreak" build
+      - name: Package jailbreak app bundles
+        run: |
+          mkdir -p build/deb-rootful/DEBIAN build/deb-rootless/DEBIAN
+          mkdir -p build/deb-rootful/Applications/MTManageriOS.app build/deb-rootless/Applications/MTManageriOS.app
+          cp -R build/jailbreak/MTManagerJailbreak.app/. build/deb-rootful/Applications/MTManageriOS.app/
+          cp -R build/jailbreak/MTManagerJailbreak.app/. build/deb-rootless/Applications/MTManageriOS.app/
+          printf 'Package: com.jituileet.mtmanager.ios\nName: MT Manager iOS\nVersion: 0.1.0\nArchitecture: iphoneos-arm\nDescription: MT-style iOS file manager (rootful)\nMaintainer: JituiLeet\nSection: Utilities\nDepends: firmware (>= 12.0)\n' > build/deb-rootful/DEBIAN/control
+          printf 'Package: com.jituileet.mtmanager.ios\nName: MT Manager iOS (Rootless)\nVersion: 0.1.0\nArchitecture: iphoneos-arm64\nDescription: MT-style iOS file manager (rootless)\nMaintainer: JituiLeet\nSection: Utilities\nDepends: firmware (>= 15.0)\n' > build/deb-rootless/DEBIAN/control
+          dpkg-deb --build build/deb-rootful MTManager-Jailbreak-Rootful.deb
+          dpkg-deb --build build/deb-rootless MTManager-Jailbreak-Rootless.deb
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MTManager-iOS-builds
+          path: |
+            MTManager-TrollStore.ipa
+            MTManager-Jailbreak-Rootful.deb
+            MTManager-Jailbreak-Rootless.deb
